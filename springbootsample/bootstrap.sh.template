@@ -6,3 +6,5 @@ docker build -t springboot-sample .
 # push to ecr
 docker tag springboot-sample {account id}.dkr.ecr.{aws region}.amazonaws.com/springboot-sample
 docker push {account id}.dkr.ecr.{aws region}.amazonaws.com/springboot-sample
+# deploy to kubenetes
+kubectl apply -f kubenetes.yaml
