@@ -1,6 +1,7 @@
 package andrew.ren.springbootsample;
 
 import java.time.Duration;
+import java.util.Random;
 import javax.annotation.PostConstruct; 
 import org.apache.commons.lang.RandomStringUtils;
 
@@ -34,38 +35,48 @@ public class SampleController {
     
     private JedisPool pool;
     
+    private String scriptsha = null;
+    
     Logger logger = LoggerFactory.getLogger(SampleController.class);
+    
+    Random rand = new Random();
     
     @PostConstruct
     public void init() {
         
         final JedisPoolConfig poolConfig = new JedisPoolConfig();
 	    poolConfig.setMaxTotal(redis_connection);
+	    poolConfig.setMaxIdle(redis_connection);
 	    poolConfig.setMinIdle(redis_connection/2);
 	    poolConfig.setTestOnBorrow(true);
 	    poolConfig.setTestOnReturn(true);
 	    poolConfig.setTestWhileIdle(true);
 	    poolConfig.setMinEvictableIdleTimeMillis(Duration.ofSeconds(60).toMillis());
 	    poolConfig.setTimeBetweenEvictionRunsMillis(Duration.ofSeconds(30).toMillis());
-	    poolConfig.setNumTestsPerEvictionRun(3);
+	    poolConfig.setNumTestsPerEvictionRun(10);
 	    poolConfig.setBlockWhenExhausted(true);
 	    
         this.pool = new JedisPool(poolConfig, redis_host, redis_port);
+        
     }
     
 	@RequestMapping("/set")
 	public String set(@RequestParam String id) {
 		Jedis jedis = null;
-		String result;
 		
         try{
             jedis = pool.getResource();
-            result = jedis.set(id, RandomStringUtils.random(15));
+            jedis.set(id, RandomStringUtils.random(15));
+            jedis.append(id, RandomStringUtils.random(15));
+            jedis.hset(id+"hash", "name", RandomStringUtils.random(15));
+            jedis.hset(id+"hash", "address", RandomStringUtils.random(15));
+            jedis.hset(id+"hash", "number", RandomStringUtils.random(15));
+            jedis.zadd("score_list", rand.nextDouble(), id);
         }finally{
             if(null != jedis)
                 jedis.close();
         }
-        return result;
+        return "OK";
 	}
 	
 	@RequestMapping("/get")
@@ -76,6 +87,8 @@ public class SampleController {
         try{
             jedis = pool.getResource();
             result = jedis.get(id);
+            jedis.hmget(id+"hash", "name", "address", "number", "nofield");
+            jedis.zrem("score_list", id);
         }finally{
             if(null != jedis)
                 jedis.close();
@@ -95,6 +108,24 @@ public class SampleController {
             jedis = pool.getResource();
             ScanResult<String> scanResult = jedis.scan(cursor, scanParams);
             result = scanResult.getResult().toString();
+            result += jedis.zrange("score_list", 0, count).toString();
+        }finally{
+            if(null != jedis)
+                jedis.close();
+        }
+        return result;
+	}
+	
+	@RequestMapping("/lua")
+	public String lua() {
+		Jedis jedis = null;
+		String result;
+		
+        try{
+            jedis = pool.getResource();
+            if (scriptsha == null)
+                scriptsha = this.loadscript(jedis);
+            result = jedis.evalsha(scriptsha).toString();
         }finally{
             if(null != jedis)
                 jedis.close();
@@ -111,6 +142,23 @@ public class SampleController {
 		jedis.set(id, RandomStringUtils.random(15));
 		result = jedis.get(id);
 		
+        return result;
+	}
+	
+	private String loadscript(Jedis jedis) {
+	    String result;
+	    
+        String script = "local rank = redis.call('zrangebyscore', 'score_list', '-inf', '+inf'); local count = 0; local result=''; " +
+                        "for k, v in pairs(rank) do " +
+                        "  if (count < 10) then " +
+                        "    local entry = redis.call('hmget', v .. 'hash', 'name', 'address', 'number') " +
+                        "    result = result .. table.concat(entry, ' ') " +
+                        "    count = count + 1 " +
+                        "  end " +
+                        "end " +
+                        "return result ";
+        result = jedis.scriptLoad(script);
+        
         return result;
 	}
 }
