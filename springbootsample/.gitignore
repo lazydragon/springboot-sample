@@ -35,3 +35,4 @@ build/
 ### bootstrap
 bootstrap.sh
 kubenetes.yaml
+application.properties
