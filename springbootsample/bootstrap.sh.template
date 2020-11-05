@@ -4,7 +4,7 @@
 # build image
 docker build -t springboot-sample . 
 # push to ecr
-docker tag springboot-sample {account id}.dkr.ecr.{aws region}.amazonaws.com/springboot-sample
-docker push {account id}.dkr.ecr.{aws region}.amazonaws.com/springboot-sample
+docker tag springboot-sample {account id}.dkr.ecr.{aws region}.amazonaws.com/springboot-sample:{tag}
+docker push {account id}.dkr.ecr.{aws region}.amazonaws.com/springboot-sample:{tag}
 # deploy to kubenetes
-kubectl apply -f kubenetes.yaml
+kubectl apply -f kubernetes.yaml

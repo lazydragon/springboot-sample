@@ -34,5 +34,6 @@ build/
 
 ### bootstrap
 bootstrap.sh
-kubenetes.yaml
+bootstrap_local.sh
+kubernetes.yaml
 application.properties
