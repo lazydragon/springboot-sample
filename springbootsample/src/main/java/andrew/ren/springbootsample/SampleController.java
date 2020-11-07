@@ -20,6 +20,7 @@ import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.ScanParams;
 import redis.clients.jedis.ScanResult;
 
+import com.amazonaws.xray.AWSXRay;
 
 @RestController
 public class SampleController {
@@ -65,7 +66,7 @@ public class SampleController {
 		Jedis jedis = null;
 		
         try{
-            jedis = pool.getResource();
+            jedis = getRedisConnection();
             jedis.set(id, RandomStringUtils.random(15));
             jedis.append(id, RandomStringUtils.random(15));
             jedis.hset(id+"hash", "name", RandomStringUtils.random(15));
@@ -85,7 +86,7 @@ public class SampleController {
 		String result;
 		
         try{
-            jedis = pool.getResource();
+            jedis = getRedisConnection();
             result = jedis.get(id);
             jedis.hmget(id+"hash", "name", "address", "number", "nofield");
             jedis.zrem("score_list", id);
@@ -105,7 +106,7 @@ public class SampleController {
         String cursor = redis.clients.jedis.ScanParams.SCAN_POINTER_START; 
 		
         try{
-            jedis = pool.getResource();
+            jedis = getRedisConnection();
             ScanResult<String> scanResult = jedis.scan(cursor, scanParams);
             result = scanResult.getResult().toString();
             result += jedis.zrange("score_list", 0, count).toString();
@@ -122,7 +123,7 @@ public class SampleController {
 		String result;
 		
         try{
-            jedis = pool.getResource();
+            jedis = getRedisConnection();
             if (scriptsha == null)
                 scriptsha = this.loadscript(jedis);
             result = jedis.evalsha(scriptsha).toString();
@@ -160,5 +161,12 @@ public class SampleController {
         result = jedis.scriptLoad(script);
         
         return result;
+	}
+	
+	private Jedis getRedisConnection() {
+	    AWSXRay.beginSubsegment("getpoolresource");
+        Jedis jedis = pool.getResource();
+        AWSXRay.endSubsegment();
+        return jedis;
 	}
 }
