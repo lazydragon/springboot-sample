@@ -1,5 +1,31 @@
 {
   "version": 1,
+  "rules": [
+    {
+      "description": "healthcheck",
+      "service_name": "*",
+      "http_method": "GET",
+      "url_path": "/",
+      "fixed_target": 0,
+      "rate": 0
+    },
+    {
+      "description": "lua",
+      "service_name": "*",
+      "http_method": "GET",
+      "url_path": "/lua",
+      "fixed_target": 1,
+      "rate": 1.0
+    },
+    {
+      "description": "scan",
+      "service_name": "*",
+      "http_method": "GET",
+      "url_path": "/scan*",
+      "fixed_target": 1,
+      "rate": 1.0
+    }
+  ],
   "default": {
     "fixed_target": 1,
     "rate": 0.1

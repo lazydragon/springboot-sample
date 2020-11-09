@@ -67,12 +67,24 @@ public class SampleController {
 		
         try{
             jedis = getRedisConnection();
+	        AWSXRay.beginSubsegment("set");
             jedis.set(id, RandomStringUtils.random(15));
+            AWSXRay.endSubsegment();
+	        AWSXRay.beginSubsegment("append");
             jedis.append(id, RandomStringUtils.random(15));
+            AWSXRay.endSubsegment();
+	        AWSXRay.beginSubsegment("hset");
             jedis.hset(id+"hash", "name", RandomStringUtils.random(15));
+            AWSXRay.endSubsegment();
+	        AWSXRay.beginSubsegment("hset");
             jedis.hset(id+"hash", "address", RandomStringUtils.random(15));
+            AWSXRay.endSubsegment();
+	        AWSXRay.beginSubsegment("hset");
             jedis.hset(id+"hash", "number", RandomStringUtils.random(15));
+            AWSXRay.endSubsegment();
+	        AWSXRay.beginSubsegment("zdd");
             jedis.zadd("score_list", rand.nextDouble(), id);
+            AWSXRay.endSubsegment();
         }finally{
             if(null != jedis)
                 jedis.close();
@@ -87,9 +99,15 @@ public class SampleController {
 		
         try{
             jedis = getRedisConnection();
+	        AWSXRay.beginSubsegment("get");
             result = jedis.get(id);
+            AWSXRay.endSubsegment();
+	        AWSXRay.beginSubsegment("hmget");
             jedis.hmget(id+"hash", "name", "address", "number", "nofield");
+            AWSXRay.endSubsegment();
+	        AWSXRay.beginSubsegment("zrem");
             jedis.zrem("score_list", id);
+            AWSXRay.endSubsegment();
         }finally{
             if(null != jedis)
                 jedis.close();
@@ -107,9 +125,13 @@ public class SampleController {
 		
         try{
             jedis = getRedisConnection();
+	        AWSXRay.beginSubsegment("scan");
             ScanResult<String> scanResult = jedis.scan(cursor, scanParams);
             result = scanResult.getResult().toString();
+            AWSXRay.endSubsegment();
+	        AWSXRay.beginSubsegment("zrange");
             result += jedis.zrange("score_list", 0, count).toString();
+            AWSXRay.endSubsegment();
         }finally{
             if(null != jedis)
                 jedis.close();
@@ -126,7 +148,9 @@ public class SampleController {
             jedis = getRedisConnection();
             if (scriptsha == null)
                 scriptsha = this.loadscript(jedis);
+	        AWSXRay.beginSubsegment("evalsha");
             result = jedis.evalsha(scriptsha).toString();
+            AWSXRay.endSubsegment();
         }finally{
             if(null != jedis)
                 jedis.close();
@@ -141,9 +165,16 @@ public class SampleController {
 		
 		jedis = new Jedis(redis_host, redis_port);
 		jedis.set(id, RandomStringUtils.random(15));
+	    AWSXRay.beginSubsegment("get");
 		result = jedis.get(id);
+        AWSXRay.endSubsegment();
 		
         return result;
+	}
+	
+	@RequestMapping("/")
+	public String health() {
+	    return "OK";
 	}
 	
 	private String loadscript(Jedis jedis) {
@@ -158,7 +189,9 @@ public class SampleController {
                         "  end " +
                         "end " +
                         "return result ";
+	    AWSXRay.beginSubsegment("scriptload");
         result = jedis.scriptLoad(script);
+        AWSXRay.endSubsegment();
         
         return result;
 	}
