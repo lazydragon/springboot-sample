@@ -1,4 +1,4 @@
-FROM openjdk:11.0.7
+FROM amazoncorretto
 
 VOLUME /tmp
 ADD target/springbootsample-1.0.jar springbootsample-1.0.jar
