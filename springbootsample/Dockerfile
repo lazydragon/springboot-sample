@@ -8,7 +8,7 @@ RUN ./mvnw package spring-boot:repackage
 FROM amazoncorretto:11
 
 COPY --from=builder /srv/target/springbootsample-1.0.jar /srv/
-ENV redis_host=capstoneredis6.ly1qve.0001.apse1.cache.amazonaws.com
+ENV redis_host=somehost
 ENV redis_port=6379
 ENV redis_connection=30
 EXPOSE 8080
