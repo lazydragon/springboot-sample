@@ -25,14 +25,11 @@ import com.amazonaws.xray.AWSXRay;
 @RestController
 public class SampleController {
 
-	@Value("${springbootsample.redis.host}")
-    private String redis_host;
+	private String redis_host = System.getenv("redis_host");
     
-    @Value("${springbootsample.redis.port}")
-    private int redis_port;
+    private int redis_port =  Integer.parseInt(System.getenv("redis_port"));
     
-    @Value("${springbootsample.redis.connection}")
-    private int redis_connection;
+    private int redis_connection =  Integer.parseInt(System.getenv("redis_connection"));
     
     private JedisPool pool;
     
